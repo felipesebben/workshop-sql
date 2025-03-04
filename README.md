@@ -1,7 +1,13 @@
  # SQL Workshop Repository 
 
-## Table of contents
+
+## Table of Contents
 - [Introduction](#introduction)
+- [Structure and Organization](#structure-and-organization)
+- [Lessons](#lessons)
+- [Scope](#scope)
+- [Goals](#goals)
+- [Contact](#contact)
 
 ## Introduction
 This repository contains annotations, references, exercises, and **projects** related to [Luciano Galvão](https://github.com/lvgalvao)'s SQL workshop. 
