@@ -53,7 +53,7 @@ ORDER BY city;
 SELECT
 	c.city AS city,
 	COUNT(DISTINCT c.customer_id) AS number_of_clients,
-	COUNT(DISTINCT e.employee_id) AS number_of_customers
+	COUNT(DISTINCT e.employee_id) AS number_of_employees
 FROM employees e
 RIGHT JOIN customers c ON e.city = c.city
 GROUP BY 1
@@ -67,10 +67,37 @@ ORDER BY c.city;
 -- Will bring everything from both tables.
 -- Example: Create a report that shows the entire number of clients and customers for each city.
 SELECT
-	COALESCE(c.city, e.city) AS city, -- Returns the first non-null value in a list
-	COUNT(DISTINCT c.customer_id) AS number_of_clients,
-	COUNT(DISTINCT e.employee_id) AS number_of_customers
-FROM employees e
+	COALESCE(e.city, c.city) AS city,
+	COUNT(DISTINCT e.employee_id) AS number_of_employees,
+	COUNT(DISTINCT c.customer_id) AS number_of_customers
+FROM employees e 
 FULL JOIN customers c ON e.city = c.city
-GROUP BY c.city, e.city
-ORDER BY c.city;
+GROUP BY e.city, c.city
+ORDER BY city;
+
+
+-- HAVING
+-- We use HAVING when we want to filter grouped queries.
+-- Example 01: Create a report that shows the total quantity of products below a threshold value.
+
+SELECT
+	o.product_id,
+	p.product_name,
+	SUM(o.quantity) AS total_quantity
+FROM order_details o
+JOIN products p ON p.product_id = o.product_id
+GROUP BY 1, 2
+HAVING SUM(o.quantity) < 200
+ORDER BY total_quantity DESC;
+
+-- Example 02: Create a report that shows the total number of orders for each client since 1996-12-31.
+-- The report must return rows only when the total number of clients is above 15.
+
+SELECT
+	o.customer_id,
+	COUNT(o.order_id) AS total_orders
+FROM orders o
+WHERE o.order_date >= '1996-12-31'
+GROUP BY o.customer_id
+HAVING COUNT(o.order_id) > 15
+ORDER BY total_orders DESC;
