@@ -18,6 +18,10 @@
 - [Limitations of `SELECT` WITH `GROUP BY`](#limitations-of-select-with-group-by)
 	- [`WINDOW FUNCTIONS` as workaround](#window-functions-as-workaround)
 	- [The advantages of using Window Functions](#the-advantages-of-using-window-functions)
+- [`RANK()`, `DENSE_RANK()` and `ROW_NUMBER()`](#rank-dense_rank-and-row_number)
+	- [Example: Classifying the products with highest sales by `order_id`](#example-classifying-the-products-with-highest-sales-by-order_id)
+		- [Similar query using `SUB QUERY`](#similar-query-using-sub-query)
+		- [Finding the cumulative proportion of products for each sale](#finding-the-cumulative-proportion-of-products-for-each-sale)
 
 # Introduction
 In this second lesson, we focused on JOIN operations.
@@ -224,3 +228,74 @@ ORDER BY customer_id, order_id;
 ## The advantages of using Window Functions
 - **Detailed data is preserved**: Differently from `GROUP BY`, the window functions return aggregations at the same row level. This is a useful feature when one wants to see both individual and aggregated data values.
 - **Flexibility**: You can calculate multiple aggregate metrics using different partitions within the same query without multiple queries or complex subqueries.
+
+# `RANK()`, `DENSE_RANK()` and `ROW_NUMBER()`
+Let's take a look at the differences between these three ways of assigning values to rows as window functions:
+- **`RANK()`**: Assigns an unique rank for each row. In case of a tie, it will apply the **same rank** to values which match and **leave a gap** where the following rank value would be. As such, when the rank increments, it always matches the number of rows corresponding to that rank.
+- **`DENSE_RANK()`**: Assigns an unique rank for each row, with **continuous** values for tied rows. In contrast with `RANK()`, however, it will not skip any position in this scenario. We can have two matching values that receive rank 2, yet the next ranked value will receive rank 3 even if it is in the fourth row. As a result, the rank value does not coincide with the number of rows.
+- **`ROW_NUMBER()`**: Assigns an unique sequential integer value to each line **indepentently from ties**, leaving no gaps.
+
+## Example: Classifying the products with highest sales by `order_id`
+The following query will give us different answers to this question.
+```SQL
+SELECT
+	o.order_id,
+	p.product_name,
+	ROUND(CAST((o.unit_price * o.quantity) AS numeric),2) AS total_sale,
+	ROW_NUMBER() OVER(ORDER BY (ROUND(CAST((o.unit_price * o.quantity) AS numeric),2)) DESC) as order_rn,
+	RANK() OVER(ORDER BY (ROUND(CAST((o.unit_price * o.quantity) AS numeric),2))DESC) AS order_rank,
+	DENSE_RANK() OVER(ORDER BY (ROUND(CAST((o.unit_price * o.quantity) AS numeric),2))DESC) AS order_dense
+FROM order_details o
+JOIN products p
+	ON p.product_id = o.product_id;
+```
+Let's take a look at the ouput:
+![alt text](assets/sql-output1.png)
+
+As we can see, we have three diferent outcomes:
+- **`ROW_NUMBER()`**: Attributed a sequential number to each row based on `total_sale`, ordered from the highest to the lowest value. Each rows gets an unique value within the set of the entire results.
+- **`RANK()`**: Attributed a rank to each row also based on `total_sale` descendingly. In case of tied values, however, it assigned the same rank to rows, skipping the next rank (there was no row with rank 2), reflecting the identity between row number and rank.
+- **`DENSE_RANK()`**: Similarly to `RANK()`, it assigned the same rank to tied values without leaving rank gaps.
+
+### Similar query using `SUB QUERY`
+```SQL
+SELECT
+	sales.product_name,
+	sales.total_sale,
+	ROW_NUMBER() OVER(ORDER BY  sales.total_sale DESC) AS order_rn,
+	RANK() OVER(ORDER BY sales.total_sale DESC) AS order_rank,
+	DENSE_RANK() OVER(ORDER BY sales.total_sale DESC) AS order_dense
+FROM (
+	SELECT
+		p.product_name,
+		SUM(o.unit_price * o.quantity) AS total_sale
+	FROM
+		order_details o
+	JOIN products p
+		ON p.product_id = o.product_id
+	GROUP BY p.product_name
+) AS sales;
+```
+In this case, we create a subquery that fetches the sum of sales for each product, returning the results grouped by `product_name`. As we are not looking for total sales for each order, the result will return the rank of sales only for product, as we are applying our window functions to `total_sale` grouped by `product_name`.
+
+### Finding the cumulative proportion of products for each sale
+What if we wanted to know the percentages that each product represent to each sale? There could be easier ways to find it out, but I came up with this soluton:
+```SQL
+SELECT
+	o.order_id,
+	p.product_name,
+	ROUND(CAST((o.unit_price * o.quantity) AS numeric),2) AS total_sale,
+	SUM(ROUND(CAST((o.unit_price * o.quantity) AS numeric),2)) OVER (PARTITION BY o.order_id) AS total_order_sales,
+	ROUND(ROUND(CAST((o.unit_price * o.quantity)AS numeric),2)/SUM(ROUND(CAST((o.unit_price * o.quantity) AS numeric),2)) OVER (PARTITION BY o.order_id),2) AS product_pct
+FROM order_details o
+JOIN products p	
+	ON p.product_id = o.product_id
+ORDER BY o.order_id, product_pct DESC;
+```
+Comments:
+- We get the total sales for each `order_id` using `PARTITION BY order_id`. 
+- Then, we calculate the total_sale at the row level without any aggregation and divide it by `total_sale`, which only considers `order_id`.
+-  The rest is just formatting so that we get a two decimals value.
+-  Output:
+![Output](assets/sql-output2.png)
+

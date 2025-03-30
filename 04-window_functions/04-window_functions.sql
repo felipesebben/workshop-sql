@@ -80,3 +80,52 @@ SELECT
 FROM orders
 ORDER BY customer_id, order_id;
 
+-- RANK(), DENSE_RANK(), and ROW_NUMBER()
+-- Example 01: finding the products with the highest sales by order id
+
+SELECT
+	o.order_id,
+	p.product_name,
+	ROUND(CAST((o.unit_price * o.quantity) AS numeric),2) AS total_sale,
+	ROW_NUMBER() OVER(ORDER BY (ROUND(CAST((o.unit_price * o.quantity) AS numeric),2)) DESC) as order_rn,
+	RANK() OVER(ORDER BY (ROUND(CAST((o.unit_price * o.quantity) AS numeric),2))DESC) AS order_rank,
+	DENSE_RANK() OVER(ORDER BY (ROUND(CAST((o.unit_price * o.quantity) AS numeric),2))DESC) AS order_dense
+FROM order_details o
+JOIN products p
+	ON p.product_id = o.product_id;
+
+-- Alternative answer using subquery
+
+SELECT
+	sales.product_name,
+	sales.total_sale,
+	ROW_NUMBER() OVER(ORDER BY  sales.total_sale DESC) AS order_rn,
+	RANK() OVER(ORDER BY sales.total_sale DESC) AS order_rank,
+	DENSE_RANK() OVER(ORDER BY sales.total_sale DESC) AS order_dense
+FROM (
+	SELECT
+		p.product_name,
+		SUM(o.unit_price * o.quantity) AS total_sale
+	FROM
+		order_details o
+	JOIN products p
+		ON p.product_id = o.product_id
+	GROUP BY p.product_name
+) AS sales;
+--ORDER BY sales.product_name;
+
+-- Example 02: finding the orders and their respective products' total sales. We need to 
+-- get the total sales for each order and the running sum of the value of each product for 
+-- each order. These calculations are based on unit price and quantity of products sold.
+SELECT
+	o.order_id,
+	p.product_name,
+	ROUND(CAST((o.unit_price * o.quantity) AS numeric),2) AS total_sale,
+	SUM(ROUND(CAST((o.unit_price * o.quantity) AS numeric),2)) OVER (PARTITION BY o.order_id) AS total_order_sales,
+	ROUND(ROUND(CAST((o.unit_price * o.quantity)AS numeric),2)/SUM(ROUND(CAST((o.unit_price * o.quantity) AS numeric),2)) OVER (PARTITION BY o.order_id),2) AS product_pct
+FROM order_details o
+JOIN products p	
+	ON p.product_id = o.product_id
+ORDER BY o.order_id, product_pct DESC;
+
+	
