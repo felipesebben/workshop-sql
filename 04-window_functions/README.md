@@ -22,6 +22,12 @@
 	- [Example: Classifying the products with highest sales by `order_id`](#example-classifying-the-products-with-highest-sales-by-order_id)
 		- [Similar query using `SUB QUERY`](#similar-query-using-sub-query)
 		- [Finding the cumulative proportion of products for each sale](#finding-the-cumulative-proportion-of-products-for-each-sale)
+- [`PERCENT_RANK()` and `CUME_DIST()`](#percent_rank-and-cume_dist)
+	- [`PERCENT_RANK()`](#percent_rank)
+	- [`CUME_DIST()`](#cume_dist)
+	- [The importance of these functions](#the-importance-of-these-functions)
+		- [Understanding the query](#understanding-the-query)
+- [`NTILE()`](#ntile)
 
 # Introduction
 In this second lesson, we focused on JOIN operations.
@@ -299,3 +305,41 @@ Comments:
 -  Output:
 ![Output](assets/sql-output2.png)
 
+# `PERCENT_RANK()` and `CUME_DIST()`
+Both functions return a value between `0` and `1`.
+## `PERCENT_RANK()`
+Calculates the **relative rank** of a specific row in a set of results such as a percentage value. It is computed using the following formula:
+- `RANK` represents the rank of the row in the set of results.
+- `N` represents the total number of rows in the set of results.
+- `PERCENT_RANK = (RANK - 1) / (N - 1)`
+## `CUME_DIST()` 
+Calculates the **cummulative distribution** of a value in a set of results. IT represents the proportion of rows that are lower or equal than the current row. It is computed using the following formula:
+- `CUME_DIST = (N rows w/values <= Current row) / (Total number of rows)`
+  
+
+## The importance of these functions
+Both functions are essential to understand the **distribution** and the **position** of data points in a dataset, particularly in cases when you want to compare the position of a specific value with the overall data distribution.
+
+```SQL
+SELECT
+	order_id,
+	unit_price * quantity AS total_sale,
+	ROUND(CAST(PERCENT_RANK() OVER (PARTITION BY order_id
+		ORDER BY (unit_price * quantity) DESC) AS numeric),2) AS order_percent_rank,
+	ROUND(CAST(CUME_DIST() OVER (PARTITION BY order_id
+		ORDER BY (unit_price * quantity) DESC) AS numeric),2) AS order_cume_dist
+FROM order_details;
+```
+
+Output:
+
+![Output](assets/sql-output3.png)
+
+### Understanding the query
+- **Data selection**: The query selects `order_id` and calculates `total_sale` as the product of `unit_price` and `quantity`.
+- **Window functions**:
+  - **`PERCENT_RANK()`**: Partitioned by `order_id` and sorted descendingly by `total_sale`, calculates the **ranking position in percentage points** for each sale as a proportion of all the other sales **within the same order**.
+  - **`CUME_DIST()`**: Likewise, calculates the **cummulative distirbution** of `total_sale`, indicating the **proportion of sales** that do not exceed the total value of the current row **for each order**.
+- **`ROUND()`**: Was used to round the results to two decimal places.
+  
+# `NTILE()`
