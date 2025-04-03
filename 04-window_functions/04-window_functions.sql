@@ -128,4 +128,16 @@ JOIN products p
 	ON p.product_id = o.product_id
 ORDER BY o.order_id, product_pct DESC;
 
+
+-- PERCENT_RANK() and CUME_DIST()
+SELECT
+	order_id,
+	unit_price * quantity AS total_sale,
+	ROUND(CAST(PERCENT_RANK() OVER (PARTITION BY order_id
+		ORDER BY (unit_price * quantity) DESC) AS numeric),2) AS order_percent_rank,
+	ROUND(CAST(CUME_DIST() OVER (PARTITION BY order_id
+		ORDER BY (unit_price * quantity) DESC) AS numeric),2) AS order_cume_dist
+FROM order_details;
+
+
 	
