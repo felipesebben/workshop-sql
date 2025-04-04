@@ -139,5 +139,37 @@ SELECT
 		ORDER BY (unit_price * quantity) DESC) AS numeric),2) AS order_cume_dist
 FROM order_details;
 
+-- NTILE()
+-- Example 01: Generate a list of workers and divide them in 3 groups
+SELECT
+	first_name,
+	last_name,
+	title,
+	NTILE(3) OVER(ORDER BY first_name) AS group_number
+FROM employees;
 
-	
+-- Example 02: Get a list of orders and their respective products. Calculate the total sales for each product and
+-- classify them in 10 bands according to the total price, from lowest to highest (1 to 10).
+SELECT
+	o.order_id,
+	p.product_name,
+	ROUND(CAST((o.unit_price * o.quantity) AS numeric),2) AS total_sale,
+	NTILE(10) OVER(ORDER BY (o.unit_price * o.quantity) ASC) AS price_grouping
+FROM order_details o
+JOIN products p
+	ON p.product_id = o.product_id
+ORDER BY o.order_id, price_grouping;
+
+
+-- LAG() and LEAD()
+-- Example 01: Get a list of customer id, order date, shipper name sorted by their previous anx next orders.
+SELECT
+	o.customer_id,
+	TO_CHAR(order_date, 'YYYY-MM-DD') AS order_date,
+	s.company_name AS shipper_name,
+	LAG(o.freight) OVER (PARTITION BY o.customer_id ORDER BY order_date DESC) AS previous_order_freight,
+	o.freight AS order_freight,
+	LEAD(o.freight) OVER (PARTITION BY o.customer_id ORDER BY order_date DESC) AS next_order_freight
+FROM orders o
+JOIN shippers s
+	ON s.shipper_id = o.ship_via;

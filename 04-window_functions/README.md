@@ -28,6 +28,12 @@
 	- [The importance of these functions](#the-importance-of-these-functions)
 		- [Understanding the query](#understanding-the-query)
 - [`NTILE()`](#ntile)
+	- [Example 01:](#example-01)
+	- [Explanation:](#explanation)
+	- [Example 02:](#example-02)
+- [`LAG()` and `LEAD()`](#lag-and-lead)
+	- [Example 01](#example-01-1)
+- [Conclusion](#conclusion)
 
 # Introduction
 In this second lesson, we focused on JOIN operations.
@@ -343,3 +349,103 @@ Output:
 - **`ROUND()`**: Was used to round the results to two decimal places.
   
 # `NTILE()`
+The `NTILE()` function divides the set of results in a number of specified parts, which are approximately close or "bands". It also attributes a group number for each row based on its position inside the set of sorted results. 
+
+The sintax is:
+```SQL
+NTILE(n) OVER(ORDER BY column_name)
+```
+In which:
+- `**n**`: Represents the **number of bands or groups** that will be created.
+- **`ORDER BY column_name`**: Uses the selected column to **order the set of results** before applying the `NTILE()` function.
+## Example 01:
+Question:
+-  Create a list of workers divided in 3 groups.
+
+Query:
+```SQL
+SELECT
+	first_name,
+	last_name,
+	title,
+	NTILE(3) OVER(ORDER BY first_name) AS group_number
+FROM employees;
+```
+Explanation:
+- **Query**: The query selects `first_name`, `last_name`, and `title` from the table `employees`.
+- `NTILE() OVER(ORDER BY first_name)`: Applies the `NTILE()` function to split the workers in 3 groups based on the **alphabetical order** of their first names. To each worker, a group number (`group_number`) will be assigned, indicating the group to which they belong.
+Output:
+
+![output](assets/sql-output4.png)
+
+Explanation:
+- 
+
+## Example 02:
+Question: 
+- Get a list of orders and their respective products. 
+- Calculate the total sales for each product and classify them in 10 bands according to the total price, from lowest to highest (1 to 10).
+
+Query:
+```	SQL
+SELECT
+	o.order_id,
+	p.product_name,
+	ROUND(CAST((o.unit_price * o.quantity) AS numeric),2) AS total_sale,
+	NTILE(10) OVER(ORDER BY (o.unit_price * o.quantity) ASC) AS price_grouping
+FROM order_details o
+JOIN products p
+	ON p.product_id = o.product_id
+ORDER BY o.order_id, price_grouping;
+```
+
+Output:
+
+![output](assets/sql-output5.png)
+
+Explanation:
+- **Query**: The query first joins the table `order_details` with `products` to retrieve the product name for each product id. Then, it selects `order_id`, `product_name`, and `total_sale`.
+- `NTILE(10) OVER(ORDER BY o.unit_price * o.quantity)`: Applies the `NTILE()` function to split each `product_name` for each `order_id` in 10 groups based on the **total sales (`o.unit_price * o.quantity`). 
+  
+Output:
+
+![output](assets/sql-output5.png)
+
+# `LAG()` and `LEAD()`
+The function `LAG()` allows you to access the value of the **previous row** within a set of results. This feature is particularly useful when making comparisons with the current row or to identify trends in a time series analysis.
+`LEAD()`, on the other hand, allows you to access the value of the **next row** within a set of results, allowing comaparisons between the current and the next row.
+
+## Example 01
+Question:
+- Get a list of customer id, order date, shipper name sorted by their previous anx next orders.
+
+Query:
+```SQL
+SELECT
+	o.customer_id,
+	TO_CHAR(order_date, 'YYYY-MM-DD') AS order_date,
+	s.company_name AS shipper_name,
+	LAG(o.freight) OVER (PARTITION BY o.customer_id ORDER BY order_date DESC) AS previous_order_freight,
+	o.freight AS order_freight,
+	LEAD(o.freight) OVER (PARTITION BY o.customer_id ORDER BY order_date DESC) AS next_order_freight
+FROM orders o
+JOIN shippers s
+	ON s.shipper_id = o.ship_via;
+```
+
+Output:
+
+![output](assets/sql-output6.png)
+
+Explanation:
+- **Query**: The query first joins the table `orders` with `shippers` to retrieve the shipper name for each order for each customer. Then, it selects `customer_id`, `order_date`, and `company_name`, as well as `freight` as our current freight value.
+- `LAG(o.freight)` will use `freight` as our value. It will look for its previous row value partitioned by `customer_id` sorted by `order_date` descendingly. As such, groups the data by customer and within each customer, each row is sorted by order date. It will look at the current row order date and fetch the previous freight based on the previous date. 
+- `LEAD(o.freight)` will behave similarly, only fetching the freight value for the next row of the customer sorted by order date.
+
+# Conclusion
+Window functions are **fundamental** when working with data analysis. If you want to:
+- Make comparisons between different levels of detail;
+- Rank your rows based on specific conditions;
+- Check for duplicates;
+- Establish comparisons;
+Then, window functions come very in handy! 
