@@ -29,7 +29,6 @@
 		- [Understanding the query](#understanding-the-query)
 - [`NTILE()`](#ntile)
 	- [Example 01:](#example-01)
-	- [Explanation:](#explanation)
 	- [Example 02:](#example-02)
 - [`LAG()` and `LEAD()`](#lag-and-lead)
 	- [Example 01](#example-01-1)
@@ -378,8 +377,7 @@ Output:
 
 ![output](assets/sql-output4.png)
 
-Explanation:
-- 
+
 
 ## Example 02:
 Question: 
