@@ -37,13 +37,28 @@ FROM (
 
 -- b. Make a list of employees dividing them in 3 groups using NTILE().
 -- Tables used: employees
+SELECT
+	CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+	NTILE(3) OVER(ORDER BY e.first_name) AS employee_grouping
+FROM employees e;
 
 
 -- Order the freight costs paid by clients according
 -- to their shipping dates, showing the previous and the following 
 -- cost using LAG() and LEAD().
 -- Tables used: orders and shippers
-
+SELECT
+	o.customer_id,
+	c.company_name,
+	o.order_date,
+	LAG(o.freight) OVER(PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS previous_order_freight,
+	o.freight AS order_freight,
+	LEAD(o.freight) OVER(PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS next_order_freight
+FROM orders o
+JOIN shippers s 
+ON s.shipper_id = o.ship_via
+JOIN customers c
+	ON c.customer_id = o.customer_id;
 
 -- Extra challenge: Google interview questions
 -- https://medium.com/@aggarwalakshima/interview-question-asked-by-google-and-difference-among-row-number-rank-and-dense-rank-4ca08f888486#:~:text=ROW_NUMBER()%20always%20provides%20unique,a%20continuous%20sequence%20of%20ranks.
