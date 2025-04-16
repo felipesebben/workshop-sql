@@ -5,6 +5,7 @@
 - [Initial Setup](#initial-setup)
   - [Manually](#manually)
   - [With Docker and Docker Compose](#with-docker-and-docker-compose)
+    - [Setup configuration with Docker](#setup-configuration-with-docker)
 - [Reports](#reports)
   - [1. Revenue Reports](#1-revenue-reports)
 
@@ -27,7 +28,7 @@ The dataset includes sample data for the following areas:
 
 `Northwind` includes 14 tables, while the relationships between the tables are shown in the following entity-relationship model.
 
-![Northwind_ERM](/assets/northwind-er-diagram.png)
+![northwind_model](/05-project/assets/northwind-er-diagram.png)
 
 # Initial Setup
 ## Manually
@@ -37,6 +38,31 @@ You can use the file `northwind.sql` to populate your database.
 **Requirements**: Install Docker and Docker Compose
 - [Start with Docker](https://www.docker.com/get-started/)
 - [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+### Setup configuration with Docker
+01. Start Docker Compose by executing the following commmand:
+   ```
+   docker-compose up
+   ```
+
+02. Connect `PgAdmin` by accessing the url http://localhost:5050 and use the password `postgres`.
+   - You can then configure a new server in `PgAdmin`:
+     ```
+     - Name: db
+     - Hostname: db
+     - Username: postgres
+     - Password: postgres
+     ```
+ 03. Stop Docker Compose using the command `Ctrl+C`. To remove the containers, use:
+      ```
+      docker-compose down
+      ```
+ 04. Files and Persistency. Any modifications on the Postgres database will persist in the volume `postgresl_data` and can be recovered when restarting Docker Compose with the `docker-compose up` command. To permanently remove files from the database, execute:
+      ```
+      docker-compose down -v
+      ```
+
+
 # Reports
 
 ## 1. Revenue Reports
