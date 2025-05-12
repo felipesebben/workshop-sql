@@ -32,15 +32,18 @@ Use LAG to get the monthly progression and the difference between each month.
 Get:
 - Difference from previous month
 - Percentage difference from previous month.
+- YoY difference, in absolute and percentage values.
 */
 SELECT
 	year,
 	month,
 	month_revenue,
-	month_revenue - LAG(month_revenue) OVER(PARTITION BY year ORDER BY month) AS month_diff,
-	(month_revenue - LAG(month_revenue) OVER(PARTITION BY year ORDER BY month)) / LAG(month_revenue) OVER(PARTITION BY year ORDER BY month) AS month_pct_diff,
+	LAG(month_revenue) OVER(ORDER BY year, month) AS month_revenue_lm,
+	month_revenue - LAG(month_revenue) OVER(ORDER BY year,month) AS month_diff,
+	(month_revenue - LAG(month_revenue) OVER(ORDER BY year, month)) / LAG(month_revenue) OVER(ORDER BY year,month) AS month_pct_diff,
+	LAG(month_revenue, 12) OVER(ORDER BY year, month) AS month_revenue_ly,
+	(month_revenue - LAG(month_revenue, 12) OVER(ORDER BY year,month)) AS month_yoy_diff,
+	(month_revenue - LAG(month_revenue, 12) OVER(ORDER BY year,month))/ LAG(month_revenue, 12) OVER (ORDER BY year, month) AS month_yoy_pct_diff,
 	ytd_revenue
 FROM ytd_monthly_revenues
 ORDER BY 1, 2;
-
-
