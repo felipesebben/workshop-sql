@@ -6,7 +6,15 @@
   - [Manually](#manually)
   - [With Docker and Docker Compose](#with-docker-and-docker-compose)
     - [Setup configuration with Docker](#setup-configuration-with-docker)
-- [Subquery](#subquery)
+- [Subqueries](#subqueries)
+- [CTEs](#ctes)
+  - [Why use them?](#why-use-them)
+  - [When not to use it](#when-not-to-use-it)
+  - [Syntax](#syntax)
+- [Views](#views)
+  - [Syntax](#syntax-1)
+  - [When to use it](#when-to-use-it)
+  - [Granting access](#granting-access)
 
 # Introduction
 In this section, we will present a few advanced reports built using SQL. The available analyses can be reproduced in different company scenarios. Throughout these reports, companies may extract valuable insights from their data, assisting in the decision-making process.
@@ -62,5 +70,67 @@ You can use the file `northwind.sql` to populate your database.
       ```
 
 
-# Subquery
+# Subqueries
 
+# CTEs
+
+## Why use them?
+- **CTEs are easier to understand**. You can divide your logic into smaller parts, each of them playing a specific role. 
+- **They are easier to maintain**. Because they are divided according to a specific functionality, they are easier to debug.
+- **They can be referenced many times in a query**. 
+
+## When not to use it
+In case of legacy, older databases, using CTEs may sometimes lead to losing the index. 
+
+## Syntax
+
+```sql
+WITH cte_name (column1, column2, ...) AS (
+    -- CTE Query Definition
+    SELECT ...
+    FROM ...
+    WHERE ...
+)
+-- Main Query that references the CTE
+SELECT ...
+FROM cte_name
+WHERE ...;
+```
+
+- CTEs require:
+  - `WITH`: this keyword initiates the definition of one or more CTEs.
+  - `cte_name`: the name you assign to the CTE. It is used to reference the CTE in the main query, treating it like a temporary table.
+  - `(column1, column2, ...)`: optional list of colum names for the CTE's result set. If ommitted, the column names from the `SELECT` statement within the CTE will be used.
+  - `AS`: precedes the CTE's query definition.
+  - `-- CTE Query Definition`: the `SELECT` statement that defines the data set for the CTE.
+  - `-- Main Query that references the CTE`: the final query that uses the CTE as if it were a regular table or view.
+  
+  
+# Views
+As the previous operations, views do not create new tables. It is a different way to query the data.
+- CTEs and Subqueries are only accessible during a query session and are not retained after it is closed.
+- **Views** can be queried from other sessions/places.
+  - They have **persistent metadata** (not the data, though). Your query will be stored but not the data itself.
+   
+## Syntax
+```sql
+CREATE VIEW view_name AS
+SELECT
+  column1,
+  column2,...
+FROM table_name;
+
+SELECT * from view_name;
+```
+
+## When to use it
+- If your query must be used recurrently, creating a view may be a better solution.
+- If your team needs to use the same query constantly and you want to avoid mistakes/inconsistencies.
+
+## Granting access
+- You can create a view and grant access to a specific user group.
+
+```sql
+GRANT SELECT ON <viewname> TO <usergroup>
+```
+  

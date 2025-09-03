@@ -29,3 +29,47 @@ WITH TotalRevenues AS (
 SELECT * FROM TotalRevenues;
 
 -- Refactoring subqueries to CTEs.
+
+WITH CalculatedValues AS (
+	-- Calculate the total sales and the rank for each product id
+	SELECT
+		det.product_id,
+		SUM((det.quantity * det.unit_price) * (1 - det.discount)) AS sold_value,
+		RANK() OVER(ORDER BY SUM((det.quantity * det.unit_price) * (1 - det.discount)) DESC) AS rank
+	FROM order_details det
+	GROUP BY 1
+),
+TopRankedProducts AS (
+	-- Select products that ranked over the #5 position
+	SELECT
+		product_id
+	FROM CalculatedValues
+	WHERE rank <= 5
+),
+FilteredProducts AS (
+	-- Filter the products with IDs between 35 and 65
+	SELECT
+		product_id
+	FROM TopRankedProducts
+	WHERE product_id BETWEEN 35 AND 65
+)
+-- Select and order the products
+SELECT
+	product_id
+FROM FilteredProducts
+ORDER BY 1 DESC;
+
+
+-- Views
+-- Creating views with previous examples
+
+CREATE OR REPLACE VIEW TotalRevenues AS 
+SELECT
+	c.company_name,
+	SUM((od.unit_price * od.quantity) * (1.0 - od.discount)) AS total
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id
+INNER JOIN order_details od ON od.order_id = o.order_id
+GROUP BY 1;
+
+SELECT * FROM TotalRevenues;
